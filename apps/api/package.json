@@ -7,18 +7,23 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.json",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio"
   },
   "dependencies": {
     "fastify": "latest",
     "@fastify/cors": "latest",
     "@fastify/helmet": "latest",
     "zod": "latest",
-    "pino": "latest"
+    "pino": "latest",
+    "@prisma/client": "latest"
   },
   "devDependencies": {
     "tsx": "latest",
     "typescript": "latest",
-    "@types/node": "latest"
+    "@types/node": "latest",
+    "prisma": "latest"
   }
 }
