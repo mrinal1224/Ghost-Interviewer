@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
+import { interviewRoutes } from "./routes/interviews.js";
 
 const app = Fastify({
   logger: true,
@@ -17,6 +18,8 @@ app.get("/health", async () => ({
   service: "ghost-api",
   timestamp: new Date().toISOString(),
 }));
+
+await app.register(interviewRoutes, { prefix: "/api/v1" });
 
 const port = Number(process.env.PORT ?? 4000);
 const host = process.env.HOST ?? "0.0.0.0";
