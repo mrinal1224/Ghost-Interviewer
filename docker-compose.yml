@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: ghost-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ghost
+      POSTGRES_PASSWORD: ghost
+      POSTGRES_DB: ghost_interviewer
+    ports:
+      - "5432:5432"
+    volumes:
+      - ghost-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  ghost-postgres-data:
