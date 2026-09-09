@@ -18,11 +18,24 @@ export type InterviewEventType =
   | "FOLLOW_UP_REQUESTED"
   | "INTERVIEW_COMPLETED";
 
+export interface CandidateProfile {
+  name: string;
+  role: "frontend" | "backend" | "fullstack";
+  experience: "0-1" | "1-3" | "3+";
+}
+
+export interface CreateInterviewRequest {
+  name: string;
+  role: CandidateProfile["role"];
+  experience: CandidateProfile["experience"];
+}
+
 export interface InterviewSession {
   id: string;
   userId: string;
   status: InterviewStatus;
   createdAt: string;
+  candidate: CandidateProfile;
 }
 
 export interface InterviewEvent {
