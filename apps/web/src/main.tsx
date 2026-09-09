@@ -1,7 +1,8 @@
 import { FormEvent, StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
-import { QueryClient, QueryClientProvider, useMutation } from "@tanstack/react-query";
-import { createInterview, type InterviewSetup } from "./lib/api.js";
+import { QueryClient, QueryClientProvider, useMutation, useQuery } from "@tanstack/react-query";
+import { createInterview, getInterview, type InterviewSetup } from "./lib/api.js";
+import { InterviewRoom } from "./components/InterviewRoom.js";
 import "./styles.css";
 
 const queryClient = new QueryClient();
@@ -13,12 +14,23 @@ const defaultSetup: InterviewSetup = {
 };
 
 function App() {
+  const pathSessionId = window.location.pathname.match(/^\/interview\/([^/]+)$/)?.[1] ?? null;
   const [setup, setSetup] = useState<InterviewSetup>(defaultSetup);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(pathSessionId);
 
   const createMutation = useMutation({
     mutationFn: createInterview,
-    onSuccess: (session) => setSessionId(session.id),
+    onSuccess: (session) => {
+      setSessionId(session.id);
+      window.history.pushState({}, "", `/interview/${session.id}`);
+    },
+  });
+
+  const sessionQuery = useQuery({
+    queryKey: ["interview", sessionId],
+    queryFn: () => getInterview(sessionId!),
+    enabled: Boolean(sessionId),
+    retry: 1,
   });
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -27,27 +39,15 @@ function App() {
   }
 
   if (sessionId) {
-    return (
-      <main className="room-shell">
-        <section className="room-card">
-          <p className="eyebrow">GHOST INTERVIEWER / SESSION READY</p>
-          <div className="status-dot" aria-hidden="true" />
-          <h1>Your interviewer is waiting.</h1>
-          <p className="lede">
-            Session created successfully. The room is ready for the adaptive interview engine.
-          </p>
-          <div className="session-meta">
-            <span>Candidate</span>
-            <strong>{setup.name}</strong>
-            <span>Session</span>
-            <code>{sessionId}</code>
-          </div>
-          <button className="primary-action" type="button" onClick={() => window.location.reload()}>
-            Enter interview room
-          </button>
-        </section>
-      </main>
-    );
+    if (sessionQuery.isPending) {
+      return <main className="room-shell"><div className="room-card"><p className="eyebrow">GHOST INTERVIEWER / LOADING</p><h1>Preparing your room.</h1></div></main>;
+    }
+
+    if (sessionQuery.isError || !sessionQuery.data) {
+      return <main className="room-shell"><div className="room-card"><p className="eyebrow">GHOST INTERVIEWER / ERROR</p><h1>Session not found.</h1><button className="primary-action" type="button" onClick={() => { setSessionId(null); window.history.pushState({}, "", "/"); }}>Start a new interview</button></div></main>;
+    }
+
+    return <InterviewRoom session={sessionQuery.data} />;
   }
 
   return (
@@ -75,22 +75,12 @@ function App() {
 
           <label>
             <span>Your name</span>
-            <input
-              required
-              value={setup.name}
-              onChange={(event) => setSetup({ ...setup, name: event.target.value })}
-              placeholder="e.g. Mrinal"
-            />
+            <input required value={setup.name} onChange={(event) => setSetup({ ...setup, name: event.target.value })} placeholder="e.g. Mrinal" />
           </label>
 
           <label>
             <span>Target role</span>
-            <select
-              value={setup.role}
-              onChange={(event) =>
-                setSetup({ ...setup, role: event.target.value as InterviewSetup["role"] })
-              }
-            >
+            <select value={setup.role} onChange={(event) => setSetup({ ...setup, role: event.target.value as InterviewSetup["role"] })}>
               <option value="frontend">Frontend Engineer</option>
               <option value="backend">Backend Engineer</option>
               <option value="fullstack">Fullstack Engineer</option>
@@ -99,26 +89,19 @@ function App() {
 
           <label>
             <span>Experience</span>
-            <select
-              value={setup.experience}
-              onChange={(event) =>
-                setSetup({ ...setup, experience: event.target.value as InterviewSetup["experience"] })
-              }
-            >
+            <select value={setup.experience} onChange={(event) => setSetup({ ...setup, experience: event.target.value as InterviewSetup["experience"] })}>
               <option value="0-1">0–1 years</option>
               <option value="1-3">1–3 years</option>
               <option value="3+">3+ years</option>
             </select>
           </label>
 
-          {createMutation.isError && (
-            <p className="error-message">Could not start the interview. Is the API running on port 4000?</p>
-          )}
+          {createMutation.isError && <p className="error-message">Could not start the interview. Is the API running on port 4000?</p>}
 
           <button className="primary-action" type="submit" disabled={createMutation.isPending}>
             {createMutation.isPending ? "Creating room…" : "Begin interview →"}
           </button>
-          <p className="fine-print">Your session will start in a fresh interview room.</p>
+          <p className="fine-print">Your session opens in a dedicated interview room.</p>
         </form>
       </section>
     </main>
