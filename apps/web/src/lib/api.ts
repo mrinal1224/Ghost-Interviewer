@@ -1,8 +1,6 @@
-export interface InterviewSetup {
-  name: string;
-  role: "frontend" | "backend" | "fullstack";
-  experience: "0-1" | "1-3" | "3+";
-}
+import type { CandidateProfile } from "@ghost-interviewer/contracts";
+
+export interface InterviewSetup extends CandidateProfile {}
 
 export interface InterviewSession {
   id: string;
