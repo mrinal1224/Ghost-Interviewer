@@ -1,0 +1,13 @@
+{
+  "name": "ghost-interviewer",
+  "private": true,
+  "version": "0.1.0",
+  "description": "AI-powered real-time technical interview platform",
+  "packageManager": "pnpm@10.14.0",
+  "scripts": {
+    "dev": "pnpm --filter @ghost/web dev & pnpm --filter @ghost/api dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  }
+}
