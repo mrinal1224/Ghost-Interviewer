@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum InterviewStatus {
+  CREATED
+  READY
+  INTRO
+  QUESTIONING
+  CODING
+  FOLLOW_UP
+  EVALUATING
+  COMPLETED
+}
+
+model Candidate {
+  id         String          @id @default(cuid())
+  name       String
+  role       String
+  experience String
+  createdAt  DateTime        @default(now())
+  interviews Interview[]
+}
+
+model Interview {
+  id          String           @id @default(cuid())
+  status      InterviewStatus  @default(CREATED)
+  createdAt   DateTime         @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+  candidateId String
+  candidate   Candidate        @relation(fields: [candidateId], references: [id])
+  events      InterviewEvent[]
+
+  @@index([candidateId])
+  @@index([status])
+}
+
+model InterviewEvent {
+  id          String    @id @default(cuid())
+  sequence    Int
+  type        String
+  payload     Json
+  occurredAt  DateTime  @default(now())
+  interviewId String
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+
+  @@unique([interviewId, sequence])
+  @@index([interviewId, occurredAt])
+}
