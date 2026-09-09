@@ -72,10 +72,110 @@ This project is intentionally designed to demonstrate engineering depth beyond a
           │
    ┌──────▼───────┐       ┌──────────────┐
    │   Database   │       │   LLM APIs   │
-   │ Postgres /   │       │ interviewer + │
-   │ event data   │       │ evaluation    │
+   │ PostgreSQL   │       │ interviewer + │
+   │ + event data │       │ evaluation    │
    └──────────────┘       └──────────────┘
 ```
+
+## Database & Local Development
+
+Ghost Interviewer now uses **PostgreSQL with Prisma** for durable interview state.
+
+### Why PostgreSQL?
+
+Interview data is relational and strongly structured:
+
+```text
+Candidate
+   ↓ 1:N
+Interview
+   ↓ 1:N
+InterviewEvent
+```
+
+The event table stores the interview timeline as immutable records. This gives us a foundation for replay, auditing, evaluation, and recovery after reconnects.
+
+### Start PostgreSQL
+
+```bash
+pnpm install
+docker compose up -d postgres
+```
+
+### Configure the API
+
+```bash
+cp apps/api/.env.example apps/api/.env
+```
+
+The default local connection is:
+
+```text
+postgresql://ghost:ghost@localhost:5432/ghost_interviewer?schema=public
+```
+
+### Generate Prisma client and run migrations
+
+```bash
+cd apps/api
+pnpm db:generate
+pnpm db:migrate
+```
+
+### Start the application
+
+From the repository root:
+
+```bash
+pnpm dev
+```
+
+The frontend runs on `http://localhost:5173` and the API on `http://localhost:4000`.
+
+## API Shape
+
+```text
+POST /api/v1/interviews
+GET  /api/v1/interviews/:id
+POST /api/v1/interviews/:id/transition
+```
+
+The route layer does not talk to Prisma directly:
+
+```text
+Route
+  ↓
+Service
+  ↓
+Repository
+  ↓
+Prisma
+  ↓
+PostgreSQL
+```
+
+This separation keeps transport logic independent from persistence and makes the interview engine easier to evolve.
+
+## Interview State Machine
+
+```text
+CREATED
+   ↓
+READY
+   ↓
+INTRO
+   ↓
+QUESTIONING
+   ├──→ FOLLOW_UP ──┐
+   ├──→ CODING ─────┤
+   └──→ EVALUATING  │
+                    ↓
+               EVALUATING
+                    ↓
+                COMPLETED
+```
+
+Invalid state transitions are rejected by the service layer instead of being left to the client.
 
 ## Planned Stack
 
@@ -91,8 +191,8 @@ This project is intentionally designed to demonstrate engineering depth beyond a
 ### Backend
 
 - Node.js + TypeScript
-- Fastify or Express (final decision during architecture setup)
-- PostgreSQL
+- Fastify
+- PostgreSQL + Prisma
 - Redis
 - WebSockets
 - Background workers
@@ -124,20 +224,20 @@ This project is intentionally designed to demonstrate engineering depth beyond a
 
 ## Roadmap
 
-### Phase 1 — Foundation
+### Phase 1 — Foundation ✅
 
 - Repository structure
 - TypeScript setup
 - Frontend shell
 - Backend service
-- Database schema
-- Authentication/session model
+- Shared contracts
 - Local Docker environment
 
-### Phase 2 — Interview Engine
+### Phase 2 — Interview Engine 🚧
 
-- Interview creation
+- Persistent interview sessions
 - Interview state machine
+- Event timeline
 - Question bank
 - AI interviewer orchestration
 - Candidate response handling
@@ -177,7 +277,7 @@ This project is intentionally designed to demonstrate engineering depth beyond a
 
 ## Project Status
 
-🚧 **Architecture & foundation — starting now.**
+🚧 **Interview Engine — persistence and event infrastructure implemented; migrations next.**
 
 ---
 
